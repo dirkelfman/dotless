@@ -6,7 +6,96 @@ namespace dotless.Test.Specs
     public class VariablesFixture : SpecFixtureBase
     {
         [Test]
-        public void VariableOperators()
+        public void VariableOerators_1()
+        {
+            var input = @"
+@value: 10px;
+@var: @value;
+.mixin(@value:8px) {
+  width: @var;
+}
+.mixin{
+  .mixin();
+}";
+            var expected = @"
+.mixin {
+  width: 8px;
+}";
+            AssertLess(input, expected);
+        }
+
+
+        [Test]
+        public void VariableOerators_2()
+        {
+            var input = @"
+@value: 10px;
+@var: @value;
+.mixin(@value:@value) {
+  width: @var;
+}
+.mixin{
+  .mixin(8px);
+}";
+            var expected = @"
+.mixin {
+  width: 8px;
+}";
+            AssertLess(input, expected);
+        }
+
+        [Test]
+        public void VariableOerators_3()
+        {
+            var input = @"
+@value: 10px;
+@var: @value;
+.mixin(@value:@value) {
+  width: @var;
+}
+.mixin{
+  .mixin(8px);
+}
+.mixin1{
+  .mixin(12px);
+}";
+            var expected = @"
+.mixin {
+  width: 8px;
+}
+.mixin1 {
+  width: 12px;
+}";
+            AssertLess(input, expected);
+        }
+
+        [Test]
+        public void VariableOerators_4()
+        {
+            var input = @"
+@value1: 10px;
+@var: @value1;
+.mixin(@value1:@value) {
+  width: @var;
+}
+.mixin{
+  .mixin(8px);
+}
+.mixin1{
+  .mixin(12px);
+}";
+            var expected = @"
+.mixin {
+  width: 8px;
+}
+.mixin1 {
+  width: 12px;
+}";
+            AssertLess(input, expected);
+        }
+
+        [Test]
+        public void VariableOerators()
         {
             var input = @"
 @a: 2;
@@ -138,6 +227,35 @@ namespace dotless.Test.Specs
         }
 
         [Test]
+        public void ThrowsWhenTryToEvaluateBeforeDefinition()
+        {
+            var input = @"
+@var: @a;
+@a: 100%;
+
+.lazy-eval {
+  width: @var;
+}
+";
+
+            AssertError("variable @a is undefined", "@var: @a;", 1, 6, input);
+        }
+
+        [Test]
+        public void ThrowsIfVariableDefinedAfterUse()
+        {
+            var input = @"
+.late-bound {
+  width: @var;
+}
+
+@var: 10px;
+";
+
+            AssertError("variable @var is undefined", "  width: @var;", 2, 9, input);
+        }
+
+        [Test]
         public void VariableOverridesPreviousValue1()
         {
             var input = @"
@@ -154,7 +272,7 @@ namespace dotless.Test.Specs
 
             var expected = @"
 .init {
-  width: 20px;
+  width: 10px;
 }
 .overridden {
   width: 20px;
@@ -179,7 +297,7 @@ namespace dotless.Test.Specs
 
             var expected = @"
 .test {
-  width: 20px;
+  width: 10px;
   height: 20px;
 }
 ";
@@ -203,7 +321,7 @@ namespace dotless.Test.Specs
 
             var expected = @"
 .test {
-  width: 20px;
+  width: 15px;
   height: 20px;
 }
 ";
@@ -255,6 +373,7 @@ namespace dotless.Test.Specs
 
             var expected = @"
 .test {
+  width: 15px;
   width: 20px;
 }
 ";

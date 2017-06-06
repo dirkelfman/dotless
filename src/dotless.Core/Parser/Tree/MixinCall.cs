@@ -139,7 +139,25 @@ namespace dotless.Core.Parser.Tree
 
             if (Important)
             {
-                return MakeRulesImportant(rules);
+                var importantRules = new NodeList();
+
+                foreach (Node node in rules)
+                {
+                    if (node is Rule)
+                    {
+                        importantRules.Add(MakeRuleImportant(node as Rule));
+                    }
+                    else if (node is Ruleset)
+                    {
+                        importantRules.Add(MakeRulesetImportant(node as Ruleset));
+                    }
+                    else
+                    {
+                        importantRules.Add(node);
+                    }
+                }
+
+                return importantRules;
             }
 
             return rules;
@@ -157,33 +175,24 @@ namespace dotless.Core.Parser.Tree
 
         private Ruleset MakeRulesetImportant(Ruleset ruleset)
         {
-            return new Ruleset(ruleset.Selectors, MakeRulesImportant(ruleset.Rules)).ReducedFrom<Ruleset>(ruleset);
-        }
-
-        private NodeList MakeRulesImportant(NodeList rules)
-        {
             var importantRules = new NodeList();
-            foreach (var node in rules)
+            foreach (var x in ruleset.Rules)
             {
-                if (node is MixinCall)
+                if (x is Rule)
                 {
-                    var original = (MixinCall)node;
-                    importantRules.Add(new MixinCall(original.Selector.Elements, new List<NamedArgument>(original.Arguments), true).ReducedFrom<MixinCall>(node));
+                    importantRules.Add(MakeRuleImportant((Rule) x));
                 }
-                else if (node is Rule)
+                else if (x is Ruleset)
                 {
-                    importantRules.Add(MakeRuleImportant((Rule) node));
-                }
-                else if (node is Ruleset)
-                {
-                    importantRules.Add(MakeRulesetImportant((Ruleset) node));
+                    importantRules.Add(MakeRulesetImportant((Ruleset) x));
                 }
                 else
                 {
-                    importantRules.Add(node);
+                    importantRules.Add(x);
                 }
             }
-            return importantRules;
+            var importantRuleset = new Ruleset(ruleset.Selectors, importantRules).ReducedFrom<Ruleset>(ruleset);
+            return importantRuleset;
         }
 
         private Rule MakeRuleImportant(Rule rule)
